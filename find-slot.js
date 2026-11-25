@@ -22,6 +22,16 @@ if (!date || !time || !CLUBS[club]) {
 }
 const [y, m, d] = date.split('-').map(Number);
 
+// Woten: leden mogen maximaal 4 dagen vooruit reserveren.
+const MAX_DAYS_AHEAD = 4;
+const today = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Brussels' }));
+const target = new Date(date);
+const daysAhead = Math.round((target - today) / 864e5);
+if (daysAhead > MAX_DAYS_AHEAD) {
+  const opens = new Date(target.getTime() - MAX_DAYS_AHEAD * 864e5).toISOString().slice(0, 10);
+  console.log(`⚠️  ${date} ligt ${daysAhead} dagen vooruit; je mag maar ${MAX_DAYS_AHEAD} dagen vooruit reserveren. Boeken kan vanaf ${opens}.`);
+}
+
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
