@@ -1,17 +1,14 @@
 {
-  "name": "padel-booker",
+  "name": "auto-reservation-padel",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Padel boeken bij Woten via Claude in Chrome",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "book": "node book.js"
+    "wanneer": "node wanneer.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "node-ical": "^0.20.1",
     "playwright": "1.56.1"
   }
 }
