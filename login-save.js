@@ -19,7 +19,11 @@ const OUT = path.join(__dirname, 'session.json');
 
 (async () => {
   console.log('1/4 Browser starten...');
-  const browser = await chromium.launch({ headless: false, timeout: 60000 });
+  // Eerst de Chromium van Playwright; lukt dat niet, dan je eigen Google Chrome.
+  const browser = await chromium.launch({ headless: false, timeout: 60000 }).catch(e => {
+    console.log('   Chromium van Playwright start niet, ik probeer je eigen Google Chrome...');
+    return chromium.launch({ headless: false, channel: 'chrome', timeout: 60000 });
+  });
   const context = await browser.newContext({ locale: 'nl-BE', timezoneId: 'Europe/Brussels' });
   const page = await context.newPage();
   await page.bringToFront();
