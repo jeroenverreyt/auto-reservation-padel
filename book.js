@@ -136,7 +136,8 @@ async function loginIfNeeded(page) {
     const err = await page.locator('.error, .alert, [role=alert]').allTextContents().catch(() => []);
     throw new Error('login failed: ' + (err.join(' ').trim() || 'unknown reason'));
   });
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 }
 
 async function dumpPage(page, name) {
@@ -166,7 +167,8 @@ async function book(page, want) {
   const slot = slots[0];
   log(`free: ${slots.map(s => s.court).join(', ')} → taking ${slot.court} ${slot.start}-${slot.end}`);
 
-  await page.goto(BASE + slot.url, { waitUntil: 'networkidle' });
+  await page.goto(BASE + slot.url, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#username, form', { timeout: 30000 });
   await loginIfNeeded(page);
   await hideOverlays(page);
   await dumpPage(page, `form-${want.ymd}-${want.hm.replace(':', '')}`);
@@ -178,7 +180,8 @@ async function book(page, want) {
   if (DRY_RUN) return { ok: true, dry: true, slot, reason: `DRY RUN: zou nu "${(await confirm.innerText().catch(() => '')).trim()}" klikken` };
 
   await confirm.click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   await dumpPage(page, `result-${want.ymd}-${want.hm.replace(':', '')}`);
   const text = await page.evaluate(() => document.body.innerText);
   const success = /(succesvol|bevestigd|geboekt|is aangemaakt|reservatie is)/i.test(text) && !/(fout|niet toegelaten|niet mogelijk|maximum)/i.test(text);
