@@ -22,14 +22,21 @@ if (!date || !time || !CLUBS[club]) {
 }
 const [y, m, d] = date.split('-').map(Number);
 
-// Woten: leden mogen maximaal 4 dagen vooruit reserveren.
-const MAX_DAYS_AHEAD = 4;
-const today = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Brussels' }));
-const target = new Date(date);
-const daysAhead = Math.round((target - today) / 864e5);
-if (daysAhead > MAX_DAYS_AHEAD) {
-  const opens = new Date(target.getTime() - MAX_DAYS_AHEAD * 864e5).toISOString().slice(0, 10);
-  console.log(`⚠️  ${date} ligt ${daysAhead} dagen vooruit; je mag maar ${MAX_DAYS_AHEAD} dagen vooruit reserveren. Boeken kan vanaf ${opens}.`);
+// Woten: leden mogen maximaal 4 dagen (96 uur, tot op het uur) vooruit reserveren.
+const MAX_HOURS_AHEAD = 96;
+{
+  // Start time in Brussels; the offset in winter is +01:00, in summer +02:00.
+  const probe = new Date(`${date}T12:00:00Z`);
+  const offset = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Brussels', timeZoneName: 'shortOffset' })
+    .formatToParts(probe).find(p => p.type === 'timeZoneName').value.replace('GMT', '') || '+0';
+  const [oh, om = '0'] = offset.split(':');
+  const iso = `${date}T${time}:00${oh.startsWith('-') ? '-' : '+'}${String(Math.abs(+oh)).padStart(2, '0')}:${om.padStart(2, '0')}`;
+  const start = new Date(iso);
+  const opens = new Date(start.getTime() - MAX_HOURS_AHEAD * 36e5);
+  if (opens > new Date()) {
+    const fmt = opens.toLocaleString('nl-BE', { timeZone: 'Europe/Brussels', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+    console.log(`⚠️  Te vroeg: je mag maar ${MAX_HOURS_AHEAD} uur vooruit reserveren. Boeken kan vanaf ${fmt}.`);
+  }
 }
 
 (async () => {
