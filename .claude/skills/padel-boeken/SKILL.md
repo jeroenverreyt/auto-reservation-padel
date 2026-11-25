@@ -1,80 +1,73 @@
 ---
 name: padel-boeken
-description: Boek een padelterrein van 90 minuten bij Woten (Tennis en Padel Vlaanderen) in de eigen Chrome van de gebruiker via Claude in Chrome. Gebruik dit als de gebruiker vraagt om padel te boeken of te plannen ("boek padel zondag 19:30", "plan padel 6 december"), en wanneer een geplande taak dit skill noemt.
+description: Padel plannen en boeken bij clubs van Tennis en Padel Vlaanderen. Gebruik dit als de gebruiker vraagt naar vrije padelterreinen, wanneer boeken kan, een padelmatch wil plannen of boeken ("boek padel zondag 19:30 in Woten", "is er morgen iets vrij?"), en wanneer een geplande taak dit skill noemt.
 ---
 
-# Padel boeken bij Woten
+# Padel plannen en boeken
 
-Je boekt in de **eigen Google Chrome van de gebruiker**, via Claude in Chrome
-(tools `mcp__claude-in-chrome__*`). De gebruiker is daar al ingelogd bij
-Tennis en Padel Vlaanderen. Laad eerst het skill `chrome-browser` als dat er is.
+Werk vanuit de map van deze repository. Alles wat geen login vraagt, doe je met `cli.js`
+(Node 20+, geen pakketten nodig). Het eigenlijke **Reserveren** gebeurt in de eigen Chrome van de
+gebruiker via Claude in Chrome (`mcp__claude-in-chrome__*`), want inloggen is beveiligd met een
+check die je niet omzeilt. Laad het skill `chrome-browser` als dat er is.
 
-## Instellingen (de gebruiker mag deze aanpassen)
+## Clubs
 
-| Instelling | Waarde |
-|---|---|
-| Club | WOTEN, clubId `2220` |
-| Terreinen, in volgorde van voorkeur | Padel 1 (`9195931`), Padel 2 (`9195932`), Padel 3 (`9195933`) |
-| Duur | 90 minuten |
-| Maximumprijs per boeking | **€ 50,00**: is het hoger, dan stop je en meld je het |
-| Betalen met saldo toegestaan | **nee**: zet op "ja" als de gebruiker saldo heeft opgeladen bij Woten |
-| Medespelers toevoegen | nee, alleen de gebruiker zelf |
+Clubs staan in `alerts.json` (of `alerts.example.json`) onder `clubs`, met `id` (clubId) en
+`windowHours` (hoeveel uur vooraf een lid mag boeken). Een andere club: vraag de link van de
+terreinreservatie van die club (`clubId=…` staat erin) en gebruik `node cli.js club <link>`.
 
-## Vaste regels van Woten
+| Club | clubId | Boekingsvenster | Bijzonder |
+|---|---|---|---|
+| Woten | 2220 | 96 uur | 3 terreinen, vaste blokken van 90 min (09:00, 10:30 … 21:00), betalen via Mollie |
 
-- Blokken van 90 min met vaste starturen: 09:00, 10:30, 12:00, 13:30, 15:00, 16:30, 18:00, 19:30, 21:00.
-  Een ander uur kan niet: meld dat en stel het dichtstbijzijnde blok voor.
-- Een lid mag **maximaal 96 uur** voor de start reserveren. Is het te vroeg, dan toont
-  het formulier: "… mag niet meer dan 4 dagen vooruit reserveren." en is de knop *Reserveren* uitgeschakeld.
-- Na *Reserveren* volgt de betaalpagina van **Mollie**. Het terrein staat dan al vast op naam van
-  de gebruiker ("wachtend op betaling"); de gebruiker heeft **60 minuten** om te betalen, anders vervalt de reservatie.
-
-## Directe reservatielink
+## Commando's
 
 ```
-https://www.tennisenpadelvlaanderen.be/reservatie?clubId=2220&terrainId=<TERREIN>&reservationDate=<DD-MM-JJJJ>&startHour=<UU:MM>&endHour=<UU:MM + 90 min>
+node cli.js club <club>                              # naam, adres, padelterreinen, duur
+node cli.js free <club> <JJJJ-MM-DD> [UU:MM] [--from 18:00 --to 21:00 --minutes 90]
+node cli.js when <club> <JJJJ-MM-DD> <UU:MM>         # wanneer boeken kan + directe links
+node cli.js ics  <club> <JJJJ-MM-DD> <UU:MM>         # agendabestand met boekalarm
 ```
+Werkt `fetch` niet achter een proxy, zet dan `NODE_USE_ENV_PROXY=1`.
 
-`node wanneer.js JJJJ-MM-DD UU:MM` (in deze map) geeft het openingsmoment en de drie links.
+## Vragen beantwoorden
 
-## Werkwijze A: de gebruiker vraagt om te plannen
+- "Wat is er vrij?" Gebruik `free` en geef de vrije uren per terrein, en of ze al boekbaar zijn.
+- "Wanneer kan ik boeken?" Gebruik `when`.
 
-1. Bepaal datum en beginuur, en controleer dat het een vast blok is.
-2. Bereken het openingsmoment: start min 96 uur (met `node wanneer.js` of zelf, in tijdzone Europe/Brussels).
-3. Is dat moment al voorbij, ga dan meteen naar werkwijze B.
-4. Anders: maak een **geplande taak** die eenmalig loopt, **3 minuten voor** het openingsmoment, met als opdracht:
-   > Gebruik het skill padel-boeken: boek Woten op <DD-MM-JJJJ> om <UU:MM>. Boeken opent om <UU:MM> op <DD-MM-JJJJ>.
-5. Bevestig aan de gebruiker: wanneer de taak loopt, en dat de Mac dan aan moet staan, met de Claude-app open en Chrome open.
+## Plannen ("plan padel zondag 6 december 19:30 in Woten")
 
-## Werkwijze B: nu boeken (of de geplande taak loopt)
+1. Controleer met `when` het openingsmoment.
+2. Maak een **geplande taak**, eenmalig, **3 minuten voor** het openingsmoment, met de opdracht:
+   > Gebruik het skill padel-boeken: boek <club> op <JJJJ-MM-DD> om <UU:MM> (<duur> min). Boeken opent om <UU:MM>.
+3. Bevestig het moment aan de gebruiker, en dat de computer dan aan moet staan met Chrome open.
+   Gebruikt de gebruiker de Padel Planner-app of thuisserver, dan komt er daarnaast ook een pushmelding.
 
-1. **Tabblad openen.** Open in Chrome een nieuw tabblad met de link voor het eerste terrein.
-2. **Account kiezen.** Zie je "Je bent al aangemeld op dit toestel" met "Doorgaan als dit lid", klik daarop.
-   Zie je een loginformulier of een beveiligingscheck, **stop dan**. Vul geen wachtwoord in en
-   probeer de check niet te omzeilen. Meld aan de gebruiker dat die in Chrome opnieuw moet inloggen.
-3. **Formulier controleren.** Controleer club WOTEN, terrein, datum, startuur, einduur (+90 min) en duur 90 min.
-   Wijkt iets af, stop en meld het.
-4. **Wachten op het openingsmoment.** Staat de melding "mag niet meer dan 4 dagen vooruit reserveren" er
-   en is het openingsmoment nog niet voorbij, wacht dan tot het openingsmoment en herlaad de pagina.
-   Herlaad daarna elke ~15 seconden, tot de melding weg is, maximaal 10 minuten na het openingsmoment.
-5. **Bezet of niet beschikbaar?** Zegt het formulier dat het terrein bezet of niet beschikbaar is,
-   probeer dan het volgende terrein uit de lijst (stap 1 met een andere `terrainId`). Zijn alle drie bezet,
-   stop en meld het. Kies nooit een ander uur zonder de gebruiker te vragen.
-6. **Prijs en betaalmethode.**
-   - Lees "Te betalen". Is het meer dan de maximumprijs, stop en meld het.
-   - Betaalmethode: staat "Saldo" in de lijst **en** saldo is toegestaan in de instellingen, kies dan saldo.
-     Anders laat je "Online betaling" staan.
-7. **Reserveren.** Klik één keer op **Reserveren**. Klik nooit twee keer en open geen tweede reservatie.
-8. **Na het klikken:**
-   - **Mollie-betaalpagina**: raak niets aan. Vul geen kaart- of bankgegevens in, kies geen betaalmethode
-     en bevestig geen betaling. Laat het tabblad open en meld aan de gebruiker: terrein, datum, uur, prijs, en dat
-     er **binnen 60 minuten** betaald moet worden in dat tabblad (Bancontact kan met een QR-code op de gsm).
-   - **Bevestiging zonder betaalstap** (betaald met saldo): meld terrein, datum, uur en prijs.
-   - **Iets anders** (foutmelding, onverwacht scherm): stop, maak een screenshot en meld wat je ziet.
+## Boeken (nu, of wanneer de geplande taak loopt)
+
+1. `node cli.js when <club> <datum> <uur>` geeft de directe links per vrij terrein.
+2. Open de eerste link in een nieuw Chrome-tabblad.
+3. Zie je "Je bent al aangemeld op dit toestel" met "Doorgaan als dit lid", klik daarop.
+   Zie je een loginformulier of een beveiligingscheck, **stop dan**: vul niets in en omzeil niets.
+   Meld dat de gebruiker in Chrome opnieuw moet inloggen.
+4. Controleer club, terrein, datum, start- en einduur en duur. Wijkt iets af, stop dan.
+5. Staat er "mag niet meer dan X dagen vooruit reserveren" en is het openingsmoment nog niet voorbij:
+   wacht tot het moment, herlaad, en herlaad daarna elke ~15 seconden, maximaal 10 minuten.
+6. Bezet? Neem de volgende link. Alles bezet: stop en meld het, en stel andere vrije uren voor
+   (`free`). Kies nooit zelf een ander uur.
+7. Prijs: is "Te betalen" meer dan **€ 50**, stop en vraag het. Betaalmethode: kies "Saldo" alleen als
+   de gebruiker gezegd heeft dat saldo mag; anders laat je "Online betaling" staan.
+8. Klik **één keer** op **Reserveren**.
+9. Daarna:
+   - **Mollie-betaalpagina**: raak niets aan. Het terrein staat vast ("wachtend op betaling") en de gebruiker
+     heeft **60 minuten** om te betalen. Meld terrein, datum, uur, prijs en dat er binnen het uur betaald
+     moet worden in dat tabblad (Bancontact kan met de QR-code op de gsm).
+   - **Bevestiging** (betaald met saldo): meld terrein, datum, uur en prijs.
+   - **Iets anders**: stop, maak een screenshot en meld wat je ziet.
 
 ## Nooit
 
-- Kaartnummers, wachtwoorden of andere gevoelige gegevens invullen of lezen.
-- Een betaling bevestigen bij Mollie of bij een bank.
-- Meer dan één terrein boeken per opdracht, of een bestaande reservatie annuleren of wijzigen zonder vraag.
-- Medespelers toevoegen die de gebruiker niet zelf heeft genoemd.
+- Wachtwoorden, kaart- of bankgegevens invullen of lezen; een betaling bevestigen.
+- Een beveiligingscheck (Cloudflare Turnstile) omzeilen of het inloggen automatiseren.
+- Meer dan één terrein boeken per opdracht, of reservaties annuleren of wijzigen zonder dat de gebruiker het vraagt.
+- Medespelers toevoegen die de gebruiker niet noemde.

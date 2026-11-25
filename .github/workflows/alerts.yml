@@ -1,0 +1,39 @@
+name: Padel-meldingen
+
+# Runs the alert engine without a home server: exact "book now" pushes
+# (scheduled up to 3 days ahead via ntfy) and cancellation watches.
+# Configure alerts.json in the repo and the secret NTFY_TOPIC.
+on:
+  schedule:
+    # Every 30 minutes. Public repo: free. Private repo: ~1500 of the 2000 free minutes per month.
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+concurrency: padel-alerts
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Vorige status ophalen
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: padel-state-${{ github.run_id }}
+          restore-keys: padel-state-
+      - name: Meldingen uitvoeren
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+        run: node cli.js run
+      - name: Status bewaren
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: padel-state-${{ github.run_id }}

@@ -1,7 +1,7 @@
 {
   "ntfy": {
     "server": "https://ntfy.sh",
-    "topic": "zet-hier-je-eigen-geheime-topic-of-gebruik-NTFY_TOPIC"
+    "topic": ""
   },
   "clubs": {
     "woten": { "id": 2220, "name": "Woten", "windowHours": 96 },

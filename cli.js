@@ -90,7 +90,7 @@ async function main() {
       break;
     }
     case 'run': {
-      if (!fs.existsSync(CONFIG)) throw new Error(`Geen ${CONFIG}. Kopieer alerts.example.json naar alerts.json en pas aan.`);
+      if (!fs.existsSync(CONFIG)) { console.log(`Geen ${path.basename(CONFIG)}: niets te doen. Kopieer alerts.example.json naar alerts.json en pas aan.`); break; }
       const state = alerts.loadJson(STATE, {});
       console.log(`Alerts uitvoeren (${new Date().toISOString()})`);
       const res = await alerts.run({ config, state });

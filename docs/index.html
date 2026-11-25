@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Padel Planner</title>
+  <meta name="description" content="Plan padel, krijg een melding op het moment dat je mag boeken, en tik door naar het juiste terrein.">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Padel">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>🎾 Padel Planner</h1>
+    <p class="sub" id="subtitle">Nooit meer te laat om te boeken</p>
+  </header>
+
+  <main>
+    <!-- PLANNEN -->
+    <section id="tab-plan" class="tab active" aria-labelledby="nav-plan">
+      <form id="plan-form" class="card" autocomplete="off">
+        <h2>Nieuwe padelmatch</h2>
+        <label>Club
+          <select id="f-club" required></select>
+        </label>
+        <div class="row">
+          <label>Datum <input type="date" id="f-date" required></label>
+          <label>Startuur <input type="time" id="f-time" step="900" required></label>
+        </div>
+        <div class="row">
+          <label>Duur
+            <select id="f-minutes"><option>60</option><option selected>90</option><option>120</option></select>
+          </label>
+          <label>Herhalen
+            <select id="f-repeat">
+              <option value="0">Eenmalig</option>
+              <option value="4">Wekelijks, 4 weken</option>
+              <option value="8">Wekelijks, 8 weken</option>
+              <option value="12">Wekelijks, 12 weken</option>
+            </select>
+          </label>
+        </div>
+        <label>Medespelers <span class="hint">(optioneel, komma's ertussen)</span>
+          <input type="text" id="f-players" placeholder="Tom, An, Pieter">
+        </label>
+        <div id="f-info" class="info" aria-live="polite"></div>
+        <button type="submit" class="primary">Plannen</button>
+        <p class="hint">Je krijgt een melding op het moment dat het boekingsvenster opengaat, met een directe link naar het terrein.</p>
+      </form>
+    </section>
+
+    <!-- MIJN MATCHEN -->
+    <section id="tab-list" class="tab" aria-labelledby="nav-list" hidden>
+      <div id="list"></div>
+      <div class="card actions-row" id="list-actions">
+        <button id="ics-all" class="secondary">📅 Alles in agenda</button>
+      </div>
+    </section>
+
+    <!-- VRIJ -->
+    <section id="tab-free" class="tab" aria-labelledby="nav-free" hidden>
+      <div class="card">
+        <h2>Vrije terreinen</h2>
+        <div class="row">
+          <label>Club <select id="v-club"></select></label>
+          <label>Datum <input type="date" id="v-date"></label>
+        </div>
+        <button id="v-go" class="primary">Toon</button>
+        <div id="v-out" class="free-list"></div>
+      </div>
+    </section>
+
+    <!-- INSTELLINGEN -->
+    <section id="tab-settings" class="tab" aria-labelledby="nav-settings" hidden>
+      <div class="card">
+        <h2>Mijn clubs</h2>
+        <ul id="club-list" class="plain"></ul>
+        <details>
+          <summary>Club toevoegen</summary>
+          <p class="hint">Open op tennisenpadelvlaanderen.be de terreinreservatie van je club en plak de link hier (er staat <code>clubId=…</code> in), of typ het clubnummer.</p>
+          <label>Link of clubnummer <input id="c-link" inputmode="url" placeholder="https://…clubId=2220"></label>
+          <label>Naam <input id="c-name" placeholder="bv. Woten"></label>
+          <label>Boekingsvenster (uren vooraf) <input id="c-window" type="number" min="1" max="2000" value="96"></label>
+          <p class="hint">Woten: 96 uur. Weet je het niet? Op het reservatieformulier staat "mag niet meer dan X dagen vooruit reserveren".</p>
+          <button id="c-add" class="secondary">Toevoegen</button>
+        </details>
+      </div>
+
+      <div class="card">
+        <h2>Pushmeldingen</h2>
+        <p class="hint">Gratis via de app <strong>ntfy</strong> (<a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener">iPhone</a> · <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">Android</a>). Abonneer je daar op je eigen, geheime topic.</p>
+        <label>Mijn topic <input id="s-topic" spellcheck="false"></label>
+        <div class="actions-row">
+          <button id="s-topic-new" class="secondary">Nieuw geheim topic</button>
+          <button id="s-test" class="secondary">Testmelding</button>
+        </div>
+        <label class="check"><input type="checkbox" id="s-ics" checked> Ook altijd een agenda-herinnering (.ics) aanbieden</label>
+      </div>
+
+      <div class="card">
+        <h2>Thuisserver (optioneel)</h2>
+        <p class="hint">Met een thuisserver of de GitHub-watcher zie je live vrije terreinen, worden meldingen exact op tijd gepland (ook verder dan 3 dagen vooruit) en krijg je een melding als er een terrein vrijkomt.</p>
+        <label>Server-adres <input id="s-api" inputmode="url" placeholder="https://padel.mijnhuis.be"></label>
+        <label>Toegangscode <input id="s-key" type="password" autocomplete="off"></label>
+        <button id="s-save" class="secondary">Bewaren</button>
+        <details>
+          <summary>Exporteer voor de GitHub-watcher</summary>
+          <p class="hint">Plak dit als <code>alerts.json</code> in je eigen kopie van de repository.</p>
+          <textarea id="s-export" rows="8" readonly></textarea>
+          <button id="s-copy" class="secondary">Kopiëren</button>
+        </details>
+      </div>
+      <p class="hint center">Gegevens blijven op dit toestel. <a href="https://github.com/jeroenverreyt/auto-reservation-padel" target="_blank" rel="noopener">Broncode</a></p>
+    </section>
+  </main>
+
+  <nav class="bottom" role="tablist">
+    <button id="nav-plan" role="tab" data-tab="plan" aria-selected="true">➕<span>Plannen</span></button>
+    <button id="nav-list" role="tab" data-tab="list">📋<span>Mijn padel</span><b id="badge" hidden></b></button>
+    <button id="nav-free" role="tab" data-tab="free">🟢<span>Vrij</span></button>
+    <button id="nav-settings" role="tab" data-tab="settings">⚙️<span>Instellingen</span></button>
+  </nav>
+
+  <div id="toast" role="status" hidden></div>
+  <script src="plan.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+services:
+  padel:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PADEL_KEY: "kies-een-lange-geheime-code"
+      NTFY_TOPIC: "jouw-geheime-ntfy-topic"
+    volumes:
+      - ./data:/app/data

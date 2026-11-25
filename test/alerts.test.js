@@ -81,3 +81,14 @@ test('ics contains the match and a booking alarm', () => {
   assert.match(ics, /TRIGGER:PT0M/);
   assert.ok(ics.split('\r\n').every(l => Array.from(l).length <= 75));
 });
+
+test('alert added after the window opened: one "book now" if free, never both', async () => {
+  const h = harness({ '2026-12-06': [slot('2026-12-06', '19:30', 'Padel 2', 2)] });
+  h.config.alerts.push({ id: 'late', type: 'release', club: 'woten', date: '2026-12-06', time: '19:30' });
+  const state = {};
+  await alerts.run({ config: h.config, state, now: new Date('2026-12-03T10:00:00Z'), topic: 't', fetchDay: h.fetchDay, log() {} });
+  await alerts.run({ config: h.config, state, now: new Date('2026-12-03T10:30:00Z'), topic: 't', fetchDay: h.fetchDay, log() {} });
+  assert.equal(h.pushed.length, 1);
+  assert.match(h.pushed[0].title, /Nu boeken/);
+  assert.equal(h.pushed[0].delay, undefined);
+});
