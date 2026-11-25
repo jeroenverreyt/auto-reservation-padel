@@ -18,13 +18,15 @@ const BASE = 'https://www.tennisenpadelvlaanderen.be';
 const OUT = path.join(__dirname, 'session.json');
 
 (async () => {
-  // Gebruik je eigen Chrome als die er is, anders de Chromium van Playwright.
-  const browser = await chromium.launch({ headless: false, channel: 'chrome' })
-    .catch(() => chromium.launch({ headless: false }));
+  console.log('1/4 Browser starten...');
+  const browser = await chromium.launch({ headless: false, timeout: 60000 });
   const context = await browser.newContext({ locale: 'nl-BE', timezoneId: 'Europe/Brussels' });
   const page = await context.newPage();
+  await page.bringToFront();
 
-  await page.goto(`${BASE}/c/portal/login`);
+  console.log('2/4 Loginpagina openen...');
+  await page.goto(`${BASE}/c/portal/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  console.log('3/4 Loginpagina staat open in het browservenster (staat het achter je terminal? Kijk in het Dock).');
   console.log('\n👉 Log in het browservenster in (vink "Onthoud mij" aan).');
   console.log('   Dit script wacht tot je ingelogd bent (max. 5 minuten).\n');
 
@@ -35,6 +37,7 @@ const OUT = path.join(__dirname, 'session.json');
   }, { timeout: 5 * 60 * 1000 });
   await page.waitForLoadState('load');
 
+  console.log('4/4 Ingelogd, sessie bewaren...');
   const cookies = (await context.cookies()).filter(c => /tennis(en)?padelvlaanderen\.be$/.test(c.domain.replace(/^\./, '')));
   console.log(`Ingelogd. ${cookies.length} cookies bewaard.`);
 
