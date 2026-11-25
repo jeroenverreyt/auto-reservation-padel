@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Padel boeken bij Woten via Claude in Chrome",
   "scripts": {
-    "wanneer": "node wanneer.js"
+    "wanneer": "node wanneer.js",
+    "test": "node --test test/*.test.js",
+    "alerts": "node cli.js run"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,40 @@
+{
+  "ntfy": {
+    "server": "https://ntfy.sh",
+    "topic": "zet-hier-je-eigen-geheime-topic-of-gebruik-NTFY_TOPIC"
+  },
+  "clubs": {
+    "woten": { "id": 2220, "name": "Woten", "windowHours": 96 },
+    "hofterburst": { "id": 2079, "name": "Hof ter Burst", "windowHours": 168 }
+  },
+  "alerts": [
+    {
+      "id": "zondag-6-dec",
+      "type": "release",
+      "club": "woten",
+      "date": "2026-12-06",
+      "time": "19:30",
+      "minutes": 90,
+      "players": ["Tom", "An", "Pieter"]
+    },
+    {
+      "id": "donderdagavond",
+      "type": "weekly",
+      "club": "woten",
+      "weekday": "do",
+      "time": "19:30",
+      "minutes": 90,
+      "until": "2027-03-31",
+      "skip": ["2026-12-24", "2026-12-31"]
+    },
+    {
+      "id": "weekend-avond",
+      "type": "watch",
+      "club": "woten",
+      "weekdays": ["za", "zo"],
+      "from": "18:00",
+      "to": "21:00",
+      "minutes": 90
+    }
+  ]
+}
