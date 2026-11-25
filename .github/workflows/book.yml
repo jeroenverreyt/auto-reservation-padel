@@ -38,8 +38,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Boek padelterreinen uit de agenda
         env:
-          TPV_USER: ${{ secrets.TPV_USER }}
-          TPV_PASS: ${{ secrets.TPV_PASS }}
+          TPV_SESSION: ${{ secrets.TPV_SESSION }}
           ICAL_URL: ${{ secrets.ICAL_URL }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || vars.DRY_RUN || '1' }}
           CLUB: ${{ inputs.club }}

@@ -6,8 +6,7 @@
  * at that club, starting at the event's start time.
  *
  * Environment variables:
- *   TPV_USER        membership number or e-mail for tennisenpadelvlaanderen.be (required)
- *   TPV_PASS        password (required)
+ *   TPV_SESSION     saved login session (base64), made with `node login-save.js` (required)
  *   ICAL_URL        private iCal address of the Google Calendar (required unless --date/--time used)
  *   DRY_RUN         "1" (default) = go up to the final confirm button, but do not book
  *   LOOKAHEAD_DAYS  how many days ahead to look in the calendar (default 14)
@@ -124,20 +123,16 @@ async function freeSlots(page) {
 }
 
 async function loginIfNeeded(page) {
-  if (!/auth\.tennispadelvlaanderen\.be/.test(page.url())) return;
-  if (!process.env.TPV_USER || !process.env.TPV_PASS) throw new Error('TPV_USER / TPV_PASS not set');
-  log('logging in');
-  await page.fill('#username', process.env.TPV_USER);
-  await page.fill('#password', process.env.TPV_PASS);
-  await Promise.all([
-    page.waitForURL(u => !/auth\.tennispadelvlaanderen\.be/.test(String(u)), { timeout: 30000 }),
-    page.getByRole('button', { name: /Inloggen/i }).click(),
-  ]).catch(async () => {
-    const err = await page.locator('.error, .alert, [role=alert]').allTextContents().catch(() => []);
-    throw new Error('login failed: ' + (err.join(' ').trim() || 'unknown reason'));
-  });
-  await page.waitForLoadState('load');
-  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  // Logging in automatically is blocked by Cloudflare Turnstile, so we only use a
+  // session that the user created by logging in themselves (login-save.js).
+  if (/auth\.tennispadelvlaanderen\.be|\/login/.test(page.url())) {
+    throw new Error('SESSIE VERLOPEN: niet meer ingelogd. Draai `node login-save.js` op je computer en vervang de secret TPV_SESSION.');
+  }
+}
+
+function sessionState() {
+  if (!process.env.TPV_SESSION) throw new Error('TPV_SESSION is niet ingesteld (maak hem met `node login-save.js`).');
+  return JSON.parse(Buffer.from(process.env.TPV_SESSION.trim(), 'base64').toString('utf8'));
 }
 
 async function dumpPage(page, name) {
@@ -168,7 +163,11 @@ async function book(page, want) {
   log(`free: ${slots.map(s => s.court).join(', ')} → taking ${slot.court} ${slot.start}-${slot.end}`);
 
   await page.goto(BASE + slot.url, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#username, form', { timeout: 30000 });
+  // With a valid session the auth server redirects straight back; otherwise the login form shows.
+  await page.waitForLoadState('load');
+  await page.waitForFunction(() => !location.host.startsWith('auth.') || document.querySelector('#username'), null, { timeout: 30000 });
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(2000);
   await loginIfNeeded(page);
   await hideOverlays(page);
   await dumpPage(page, `form-${want.ymd}-${want.hm.replace(':', '')}`);
@@ -203,7 +202,8 @@ async function book(page, want) {
   log(`${wanted.length} padel-afspraken gevonden, ${todo.length} nog te boeken${DRY_RUN ? ' (DRY RUN)' : ''}`);
 
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1400, height: 1000 }, locale: 'nl-BE', timezoneId: TZ });
+  const context = await browser.newContext({ storageState: sessionState(), viewport: { width: 1400, height: 1000 }, locale: 'nl-BE', timezoneId: TZ });
+  const page = await context.newPage();
   let failures = 0;
   for (const w of todo) {
     try {
